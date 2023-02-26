@@ -5,82 +5,140 @@ output: html_document
 
 ### Introduction
 
-An introduction of the data and a description of the trends/books/items you are choosing to analyze (and why!)
+The data set we are working with is the SPL data compiling items checked out at least 10 times a month during the period from 2017 to 2023. I want to take a look at the trend of Digital copies checked out over the year, to see how popular the digital medium is over this time period, and maybe compare that to the trends with Physical copies. I think it would also be interesting to see the title that was the most checked out for each year and of all time, to see certain popular pieces for each of these years, as they might reflect current events. 
 
 ### Summary Information
 
-Write a summary paragraph of findings that includes the 5 values calculated from your summary information R script
+``````{r, echo = FALSE, warning = F, message = F, code = readLines("summary.R")}
+# What is the average number of checkouts for each item?
+average_df <- spl_df %>%
+  group_by(Title) %>%
+  summarise(avg = mean(Checkouts)) %>%
+  print()
 
-These will likely be calculated using your DPLYR skills, answering questions such as:
+# What is the month or year with the most/least checkouts for a book that you're interested in?
+# Item of interest = Berserk : deluxe edition. 1 / by Kentaro Miura ; translation, Jason DeAngelis with Duane Johnson ; lettering and retouch, Dan Nakrosis with Studio Cutie.
+monthly_df <- spl_df %>% 
+  filter(Title == "Berserk : deluxe edition. 1 / by Kentaro Miura ; translation, Jason DeAngelis with Duane Johnson ; lettering and retouch, Dan Nakrosis with Studio Cutie.") %>%
+  group_by(CheckoutMonth) %>%
+  summarise(Checkouts) 
 
-- What is the average number of checkouts for each item?
-- What is the month or year with the most/least checkouts for a book that you're interested in?
-- What is the month or year with the most/least checkouts for ebooks?
-- How has the number of print book checkouts changed over time?
+max_checkout <- monthly_df %>%
+  filter(Checkouts == max(Checkouts)) %>%
+  pull(CheckoutMonth)
 
-Feel free to calculate and report values that you find relevant.
+min_checkout <- monthly_df %>%
+  filter(Checkouts == min(Checkouts)) %>%
+  pull(CheckoutMonth)
+  
+# What is the month or year with the most/least checkouts for ebooks?
+ebook_df <- spl_df %>%
+  filter(MaterialType == "EBOOK") %>%
+  group_by(CheckoutYear) %>%
+  summarise(avg = mean(Checkouts))
+
+max_ebook <- ebook_df %>%
+  filter(avg == max(avg)) %>%
+  pull(CheckoutYear)
+
+min_ebook <- ebook_df %>%
+  filter(avg == min(avg)) %>%
+  pull(CheckoutYear)
+
+# How has the number of print book checkouts changed over time?
+book_df <- spl_df %>%
+  filter(MaterialType == "BOOK") %>%
+  group_by(CheckoutYear) %>%
+  summarise(Checkouts = sum(Checkouts)) %>%
+  pull()
+```
+For each item, the average number of checkouts is noted in the attached table `average_df`. There is a total of 99545 items in this table, though it's worth to note that many items are different version of each other (i.e. same books but separated in Physical and Digital copies). I was interested in the checkouts of the deluxe edition of Berserk, a manga series by Kentaro Miura, one of my all-time favorites. The month with the most checkouts is October, and the least month(s) is a tie with March and August. 
+As said in the index, I was interested in seeing how popular e-books becomes over the year. The year with the most e-book checked out is `r max_ebook`, while the least checkout year was `r min_ebook`. Conversely, the hypothesis would be that over the year, physical copies of books become less popular as ebook becomes more common. We can see this by observing this trend which ranked the total number of checkouts from 2017 to 2023, respectively: `r book_df`. From this data set, it seems that the number of checkouts for physical books has been relatively decreasing from 2018 to 2023, with a huge drop of `r format(1490783-363157, scientific = F)` checkouts between 2019 and 2020, and the number of checkouts from 2023 is approximately 1/10 the amount of checkouts in 2022, though, we must note the the data seems to be last updated on Feb 2023, which mean it has yet to account for the entire year of 2023. 
 
 ### The Dataset
 
 - Who collected/published the data?  
+  The data is collected and published by the Seattle Public Library. 
+  
 - What are the parameters of the data (dates, number of checkouts, kinds of books, etc.)?
-- How was the data collected or generated?  
-- Why was the data collected?  
-- What, if any, ethical questions do you need to consider when working with this data?  
-- What are possible limitations or problems with this data?   (at least 200 words)
+  The parameters of this data sets are:
+  1. UsageClass
+Denotes if item is “physical” or “digital
+  2. CheckoutType
+Denotes the vendor tool used to check out the item.
+  3. MaterialType
+Describes the type of item checked out (examples: book, song movie, music, magazine)
+  4. CheckoutYear	
+The 4-digit year of checkout for this record.
+  5. CheckoutMonth	
+The month of checkout for this record.
+  6. Checkouts	
+A count of the number of times the title was checked out within the “Checkout Month”.
+  7. Title	
+The full title and subtitle of an individual item
+  8. ISBN	
+A comma separated list of ISBNs associated with the item record for the checkout.
+  9. Creator	
+The author or entity responsible for authoring the item.
+  10. Subjects	
+The subject of the item as it appears in the catalog
+  11. Publisher	
+The publisher of the title
+  12. PublicationYear	
+The year from the catalog record in which the item was published, printed, or copyrighted.
+  
+- How was the data collected or generated? 
+  The data monthly-counted for any items, physical and digital, that was checked out at least 10 times from SPL over the period from 20217 to 02/2023. 
 
+- Why was the data collected? 
+  The data was collected for community use. 
+  
+- What, if any, ethical questions do you need to consider when working with this data? 
+  When working with this data, we must considered that this data only included works from any author that is feature in SPL. We must also considered that the same works may have been organized under different title and version, and the checkout number might be miscounted. 
+  
+- What are possible limitations or problems with this data?   (at least 200 words)
+  One limitation this data set has is that it is only from 2017 to Feb of 2023, so it has yet to be fully annual. For example, when we were trying to see the annual trend of physical books checked out, we saw a huge drop between 2022 and 2023 (approximately a 90% drop), but one may fail to realize that this is only up-to-date for Feb 2023, so that number is yet to be accurate. Another challenge is when counting the average or total number of checkouts for each item, some items are the same work but in different forms (i.e. same work but physical books vs digital ebooks). So if we are trying to see, let's say, how often a particular creator was being checked out, we might run the risk of overcounting the same work of that creator twice between the physical and digital versions. This is also a really big data set, and despite us filtering out the average number of checkouts for each item, it is still a lot of data to go through to see the general trend of checking out just by looking at the data table. When searching for checkouts with the series Berserk, I noticed the title section was very messy. It has weird capitalization and some odds punctuation, which can also be setbacks when organizing the data.
 
 ### First Trends Over Time Chart
 
-Include a chart. Make sure to describe why you included the chart, and what patterns emerged
-
-The first chart that you will create and include will show the trend over time of your variable/topic/interest. Think carefully about what you want to communicate to your user (you may have to find relevant trends in the dataset first!). Here are some requirements to help guide your design:
-
-- Show more than one, but fewer than ~10 trends
-  - For example, two books, or 5 different mediums
-- You must have clear x and y axis labels
-- The chart needs a clear title 
-- You need a legend for your different line colors and a clear - legend title
-In your .Rmd file, make sure to describe why you included the chart, and what patterns emerged
-
-When we say "clear" or "human readable" titles and labels, that means that you should not just display the variable name.
-
-Here's an example of how to run an R script inside an RMarkdown file:
+I want to see the trend of average checkouts over the years for each month of book, ebook, and audio book. Using a line chart, we can see that the number of checkouts for book is overall lower than that of ebook and audiobook. In other words, the digital mediums seems to be more popular than its physical counter part. Audiobook and ebook have around the same average, but ebook tend to be more flat throughout the 12 months, while Audiobook seems to have a bump around June. It is worth to note that our y-axis is scaled from 20 to ~27, which make the gap between book and ebook/audiobook seems larger. 
 
 ``````{r, echo = FALSE, warning = FALSE, code = readLines("chart1_example.R")}
 ```
 
 ### Second Trends Over Time Chart
-
-Include a chart. Make sure to describe why you included the chart, and what patterns emerged
-
-The second chart that you will create and include will show another trend over time of your variable/topic/interest. Think carefully about what you want to communicate to your user (you may have to find relevant trends in the dataset first!). Here are some requirements to help guide your design:
-
-- Show more than one, but fewer than ~10 trends
-  - For example, two books, or 5 different mediums
-- You must have clear x and y axis labels
-- The chart needs a clear title 
-- You need a legend for your different line colors and a clear - legend title
-In your .Rmd file, make sure to describe why you included the chart, and what patterns emerged
-
-When we say "clear" or "human readable" titles and labels, that means that you should not just display the variable name.
-
-Here's an example of how to run an R script inside an RMarkdown file:
+I want to take a look at total checkouts of an author across different work over the months. I choose author Sayaka Murata, as the title Convenience Store Women caught my eye. From the chart, we can see that the Convenience Store Store seems to be their most popular works, with much higher checkouts compare to their two other works. For both Convenience Store Woman and Life Ceremony: Stories, they have peaks checkout in August, a dip in November and goes back up in December. Interestingly, Earthlings: A Novel goes up in November and goes down in December. 
 
 ``````{r, echo = FALSE, code = readLines("chart2_example.R")}
 ```
 
 ### Your Choice
 
-The last chart is up to you. It could be a line plot, scatter plot, histogram, bar plot, stacked bar plot, and more. Here are some requirements to help guide your design:
+I choose to use a line chart to look at the trends in different type of tool used for checkouts over the years. From the chart, it seems like between 2017 and 2019, Zinio was the most popular tool use, in fact, at some point, is 3 times as popular than other tools. However, after 2019, it was no longer documented to be used. Freegal and Hoopla was no longer documented after 2018, while Horizon and OverDrive went on to even current time, both steadily went on, with OverDrive being slightly more popular on average. 
 
-- You must have clear x and y axis labels
-- The chart needs a clear title 
-- You need a legend for your different line colors and a clear legend title
+``````{r, echo = FALSE}
+spl_df <- read.csv("~/Desktop/2017-2023-10-Checkouts-SPL-Data.csv", stringsAsFactors = FALSE)
+x_values <- seq(1, 3)
+y_values <- seq(1, 3)
 
-Here's an example of how to run an R script inside an RMarkdown file:
+# compare line graph of physical copies over the month of each year
+library(ggplot2)
+library(dplyr)
+library(RColorBrewer) 
+library(scales)
 
-``````{r, echo = FALSE, code = readLines("chart2_example.R")}
+mychart <- spl_df %>%
+  group_by(CheckoutYear, CheckoutType) %>%
+  summarise(avg = mean(Checkouts))
+
+ggplot(mychart) +
+  geom_line(aes(x = CheckoutYear, y = avg, color = CheckoutType)) +
+  labs(title = "Average Usage of Checkout Tools", 
+       x = "year", 
+       y = "average checkouts") +
+  scale_color_brewer(palette = "Pastel2") +
+  theme_dark()
+  
 ```
 
 
