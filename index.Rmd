@@ -1,5 +1,6 @@
 ---
 title: "A3: SPL Library Checkouts"
+author: "Duyen T Nguyen"
 output: html_document
 ---
 
